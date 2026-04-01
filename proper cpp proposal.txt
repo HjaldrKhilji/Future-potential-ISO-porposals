@@ -1,0 +1,78 @@
+Proposal: Extending Runtime Polymorphism to Reduce Ad Hoc Branching
+
+Abstract
+
+A proposal to reduce ad hoc branching statements by extending the core notion of polymorphism from Object-Oriented Programming style polymorphism to allowing any object to be polymorphic.
+
+1. Description of the Complete Problem
+
+Branching has always been an issue, just as naked new/delete, macros, and the like have been. Throughout these many years, we have fixed many of these issues with smart pointers, templates, etc. The biggest sore pain in branching is repetition; in particular, functions not having different return types based on the value of an argument leads to developers being forced to write branch statements again and again.
+
+Furthermore, we all dream of flattening nested switch-case statements into one. We want to do it so that the new solution is cleaner and faster, but the current technique (macros) for this doesn't help. Another issue is that we try to force ourselves to believe that std::visit is a panacea to all our problems in this class of problems.
+
+1.1 The Issue with std::variant and std::visit
+
+Before discussing the solution, it is important to address why current tools like std::variant in conjunction with std::visit fall short:
+
+High Space Overhead: To avoid overhead using pointers (since references aren't allowed in a "type-safe union"), you end up with pointer redirections. These rely on RAM, which is slow. Pointer redirections are cache killers and might cost more than the entire switch statement and the function call combined.
+
+Inefficiency and Verbosity: It is ugly to write and inefficient. It is unable to flatten nested switch-case statements, and the performance for single branching using std::visit is also inefficient because it still (probably) relies on function pointers or single-dispatch polymorphism.
+
+Rigidity: You cannot branch on objects instead of just types. For example: std::variant<int, double> is possible, but std::variant<int, int>{int_obj1, int_obj2} is not.
+
+Basically, std::variant is an anonymous union powered by implementation-defined techniques that almost always use pointers. It requires multiple dispatches, which in turn require multiple function entries in the function pointer array/vtable. This can lead to space complexity reaching N^N. Furthermore, it is difficult for the optimizer to flatten these jumps because all the optimizer sees is multiple function pointer entries in an array.
+
+Reference: Mateusz Pusz’s talk on why std::visit fails: [https://www.youtube.com/watch?v=gKbORJtnVu8](https://www.youtube.com/watch?v=gKbORJtnVu8)
+
+2. Potential Solutions
+
+I would like to propose three potential solutions to this class of problems:
+
+Solution 1: Vtable Expansion
+
+Currently, every function with a unique name and argument signature has its own entry in a vtable. This solution seeks to expand this by allowing every entry to contain an array that one can index with an std::size_t integer.
+
+A vtable for a class A would look like this:
+
+func_a(int, double, float) — A single function, no indexing needed.
+
+func_b(int)[] — An array of functions with potentially different return types.
+
+This allows for single-dispatch polymorphism to work based on values. The first step would be to allow explicit function template specializations to be virtual functions.
+
+Solution 2: New Value Type (std::branch_value)
+
+This technique introduces a new value type (similar to lvalues, xvalues, or rvalues) and a corresponding type to use it. This would effectively be the std::visit the community has asked for:
+
+std::branch_value<int, double, std::string> lazy_evaluated_value{obj1, obj2, obj3}
+
+The values stored could be indexed at runtime:
+
+lazy_evaluated_value[0] or, using readable enums:
+
+lazy_evaluated_value[static_cast<type_function_to_get_int_of_enums_size_t<sizeof(enum_1)>>(enum1::get_value_at_index_y)]
+
+This provides the compiler with the necessary information to flatten multiple nested branches into very few, acting like a tuple that can be indexed at runtime.
+
+Solution 3: Value-Providing std::visit
+
+Allow std::visit to provide a Value, similar to how it provides a type that can be checked using constexpr if statements. This would likely require the implementation of Solution 1 for implementations that currently use classic single-dispatch polymorphism.
+
+3. End Note
+
+I am suggesting expanding the notion of runtime polymorphism in C++ to something more readable, systematic, less verbose, and efficient.
+
+As Bjarne Stroustrup stated:
+
+"Generic programmers tend to focus on the design of algorithms with the concepts for template arguments providing an interface that can accommodate many types" (page 769 of his C++ 4th edition book).
+
+I want to expand the notion of Generic programming by expanding the notion of tuples and/or current runtime polymorphism to allow for indexing at runtime. He also noted:
+
+"Algorithms, both the standard-library algorithms and the users’ own ones, are important:
+• Each names a specific operation, documents an interface, and specifies semantics.
+• Each can be widely used and known by many programmers.
+For correctness, maintainability, and performance, these can be immense advantages compared to ‘‘random code’’ with less well-specified functions and dependencies. If you find yourself writing a piece of code with several loops, local variables that don’t seem to relate to each other, or complicated control structures, consider if the code could be simplified by making a part into a function/algorithm with a descriptive name, a well-defined purpose, a well-defined interface, and welldefined dependencies."(page 769 of his C++ 4th edition book)
+
+If Solution 2 is provided by the standard, we can make branching statements systematic rather than ad hoc.
+
+I really appreciate all the feedback I have received and am looking for more. These insights helped narrow my focus to the specific idea I wish to propose.
