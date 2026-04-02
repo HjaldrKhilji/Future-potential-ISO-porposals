@@ -221,7 +221,41 @@ Time (ns) for subscript: 2
 (please ignore the wierd "drnoo" part, it's just a username that my father chose)
 
 
-how the newer syntax would probably look like:
+
+before looking at the new solution, see the discussion that resulted in it:
+On Fri, 3 Apr 2026, 12:43 am Breno Guimarães, <******(for his privacy)> wrote:
+Hi Muneem,
+
+Can you post how the code would look like with the feature you are proposing?
+
+You don't need to try to teach everyone about how compilers work. Some of the things you say are just incorrect, so this will drag on.
+
+You showed the benchmark showing different implementations have different times. Great.
+
+How would the new improved version look like?
+It doesn't need to compile.
+
+Thanks!
+I replied with:
+Hi!
+Thank you for your feedback ❤️❤️❤️.
+Sorry if some of the things that I said were incorrect, but my philosophical point was that compilers are layered models that need a language to consume intent and context so they product proper code, that's just how it should be, why we use compiled languages.
+On the question of how the syntax will look like:
+It would have the same semantics as an std::array(runtime indexing, and a template instantion for every collection that it is instantiated for), but is homegenous. (I  called it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
+1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
+2. Providing homogenous lists (unlikely to be implemented).
+3. Providing a specific kind of function which can have different return types based on the index passed:
+{Int_obj, double_obj, float_obj} return_indexed_value(any integer that ful fills the is integral concept index);
+//The compiler deduces the body itself.
+A cherry on the top would be to allow any class to be based for indexing(those classes must have a particular function for providing the integer), so that you can give compilers an insight to the fact that you are potentially doing multiple subscript operations in the same chain, so the compiler can optimize that chain. For example:
+List[list[1]] the compiler can figure out ways to make this as cache friendly as possible.
+(This feature would probably work the same way if you provide an operator that converts the type to int, but again, this feature would make the intent more clearer).
+
+
+
+
+
+how the newer syntax would probably look like (when compared to std::visit):
 #include <variant>
 #include <iostream>
 struct A { int get() { return 10; } };
@@ -248,9 +282,40 @@ data_accessed_through_visit a;
 a(2);
 
 //personally, i think the best solution for the problem should look something like this: 
-//{ 1, b, c} return_indexed_value(std::size_t index);
+//{ 1, b, c} return_indexed_value(std::size_t index); 
+//A last value can be added to express  what is to be returned if the index is out of range, that would be awesome because the compiler //can even optimize that check.    
 
 return 0;
 }
 
+A side by side comparision is :
+
+// Current C++:#include <variant>
+#include <iostream>#include<string>
+struct A { int get() { return 1; } };
+struct B { std::string get() { return "love C++";} };
+struct C { double get() { return 2.1; } };
+
+struct data_accessed_through_visit {
+    static std::variant<A, B, C> obj;
+   
+    inline void operator()(int) {
+        std::visit([](auto&& arg) {
+            std::cout<< arg.get();
+        }, obj);
+    }
+};//proves that std visit is too verbose and  slow (too hard/impractical to optimize) for this taskwhat about switches, enjoy the look for yourself(while imagining the look if this were repeated multiple times over hundreds of case statements):struct data_switched {
+    inline void operator()(int index) {
+        switch(index) {
+            case 0: std::cout<<1;
+            case 1: std::cout<<"love C++";            case 2: std::cout<<2;
+            default: return -1;
+        }
+    }
+};
+fix:struct data_indexed {
+{ 1, "love C++", 2} return_indexed_value(std::size_t index); 
+inline void operator()(int index) {
+        std::cout<<return_indexed_value(index);    
+}}
 
