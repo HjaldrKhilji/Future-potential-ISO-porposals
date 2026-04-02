@@ -80,7 +80,9 @@ I really appreciate all the feedback I have received and am looking for more. Th
 code to check weather I am right (use godbolt -03):
 #include <variant>
 #include <iostream>
-
+#include <chrono>
+#include <ctime>
+#include <iomanip>
 struct A { inline int get(){return 1;} };
 struct B { inline int get(){return 2;} };
 struct C { inline int get(){return 3;} };
@@ -120,29 +122,39 @@ struct data_switched {
 
 
 volatile int x = 0;
-
+constexpr uint64_t loop_count=1000000;
 static void measure_switch() {
     data_switched obj;
-    for (int i=0; i++<1000;) {
+    for (int i=0; i++<loop_count;) {
         x = obj(user_index);
     }
 }
 
 static void measure_visit() {
     data_accessed_through_visit obj;
-    for (int i=0; i++<1000;) {
+    for (int i=0; i++<loop_count;) {
         x = obj(user_index);
     }
 }
 
 static void measure_ternary() {
     data_ternary obj;
-    for (int i=0; i++<1000;) {
+    for (int i=0; i++<loop_count;) {
         x = obj(user_index);
     }
 }
 
+template<typename func_t>
+void call_func(func_t callable_obj, int arg){
+    const std::chrono::time_point<std::chrono::steady_clock> start =
+        std::chrono::steady_clock::now();
+    callable_obj();
+    const std::chrono::time_point<std::chrono::steady_clock> end =
+        std::chrono::steady_clock::now();
+    std::cout<<
+    std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
+}
 
 int main(){
     std::cout << "Enter index (0 for A, 1 for B, 2 for C): ";
@@ -150,11 +162,15 @@ int main(){
     if (user_index == 0) data_accessed_through_visit::obj = A{};
     else if (user_index == 1) data_accessed_through_visit::obj = B{};
     else if (user_index == 2) data_accessed_through_visit::obj = C{};
+    std::cout<<"time taken for switch statements:";
     measure_switch();
+    std::cout<<"time taken for visit:";
     measure_visit();
+    std::cout<<"time taken for ternary:";
+
     measure_ternary();
     return 0;
 
 }
 
-I will also post the benchmarks!
+
