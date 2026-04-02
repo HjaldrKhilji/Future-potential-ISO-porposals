@@ -76,3 +76,85 @@ For correctness, maintainability, and performance, these can be immense advantag
 If Solution 2 is provided by the standard, we can make branching statements systematic rather than ad hoc.
 
 I really appreciate all the feedback I have received and am looking for more. These insights helped narrow my focus to the specific idea I wish to propose.
+
+code to check weather I am right (use godbolt -03):
+#include <variant>
+#include <iostream>
+
+struct A { inline int get(){return 1;} };
+struct B { inline int get(){return 2;} };
+struct C { inline int get(){return 3;} };
+
+struct data_accessed_through_visit {
+    static std::variant<A, B, C> obj;
+    int operator()(int) {
+        int a1;
+        std::visit([&a1](auto&& arg) { a1= arg.get(); }, obj);
+        return a1;
+    }
+};
+
+std::variant<A, B, C> data_accessed_through_visit::obj = C{};
+int a_val = 1, b_val = 2, c_val = 10;
+int user_index = 0;
+
+struct data_ternary {
+    int operator()(int index) {
+        return (index == 0) ? a_val : (index == 1) ? b_val : (index == 2) ? c_val : -1;
+    }
+};
+
+struct data_switched {
+    int operator()(int index) {
+        switch(index) {
+            case 0: return a_val;
+            case 1: return b_val;
+            case 2: return c_val;
+            default: return -1;
+        }
+    }
+};
+
+
+
+
+
+volatile int x = 0;
+
+static void measure_switch() {
+    data_switched obj;
+    for (int i=0; i++<1000;) {
+        x = obj(user_index);
+    }
+}
+
+static void measure_visit() {
+    data_accessed_through_visit obj;
+    for (int i=0; i++<1000;) {
+        x = obj(user_index);
+    }
+}
+
+static void measure_ternary() {
+    data_ternary obj;
+    for (int i=0; i++<1000;) {
+        x = obj(user_index);
+    }
+}
+
+
+
+int main(){
+    std::cout << "Enter index (0 for A, 1 for B, 2 for C): ";
+    if (!(std::cin >> user_index)) std::cerr<<"error!";
+    if (user_index == 0) data_accessed_through_visit::obj = A{};
+    else if (user_index == 1) data_accessed_through_visit::obj = B{};
+    else if (user_index == 2) data_accessed_through_visit::obj = C{};
+    measure_switch();
+    measure_visit();
+    measure_ternary();
+    return 0;
+
+}
+
+I will also post the benchmarks!
