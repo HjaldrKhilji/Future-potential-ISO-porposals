@@ -156,22 +156,25 @@ void call_func(func_t callable_obj, int arg){
 
 }
 
-int main(){
+int main() {
     std::cout << "Enter index (0 for A, 1 for B, 2 for C): ";
-    if (!(std::cin >> user_index)) std::cerr<<"error!";
+    if (!(std::cin >> user_index)) return 1;
+
+    // Set the variant state
     if (user_index == 0) data_accessed_through_visit::obj = A{};
     else if (user_index == 1) data_accessed_through_visit::obj = B{};
     else if (user_index == 2) data_accessed_through_visit::obj = C{};
-    std::cout<<"time taken for switch statements:";
-    measure_switch();
-    std::cout<<"time taken for visit:";
-    measure_visit();
-    std::cout<<"time taken for ternary:";
 
-    measure_ternary();
+    std::cout << "Time (ns) for switch:  ";
+    call_func(measure_switch, user_index);
+
+    std::cout << "Time (ns) for visit:   ";
+    call_func(measure_visit, user_index);
+
+    std::cout << "Time (ns) for ternary: ";
+    call_func(measure_ternary, user_index);
+
     return 0;
-
 }
-
 
 
