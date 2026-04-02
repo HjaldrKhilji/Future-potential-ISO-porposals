@@ -194,6 +194,8 @@ int main() {
     return 0;
 }
 the bench marks consistently show that these syntax constructs do matter (the smaller the index range is, the more the compiler can flatten it and know how to branch), notice how ternary is outperforming them all even though its nesting, This means that adding new syntax with the sole purpose to give compilers as much information as possible is actually useful. Consider how templates and instantiation give the compiler extra insight. why? because templates are instantiated at the point of instantiation which can be delayed upto link time. these are the benchmarks:
+
+
 benchmarks for g++:
 Enter index (0 for A, 1 for B, 2 for C): 2
 Time (ns) for switch:  33
@@ -224,3 +226,83 @@ Time (ns) for switch:  34
 Time (ns) for visit:   282
 Time (ns) for ternary: 20
 Time (ns) for subscript: 34
+
+
+visual studio 2026:
+Time (ns) for switch:  97
+Time (ns) for visit:   534
+Time (ns) for ternary: 41
+Time (ns) for subscript: 61
+
+Time (ns) for switch:  91
+Time (ns) for visit:   469
+Time (ns) for ternary: 46
+Time (ns) for subscript: 71
+
+
+g++(-o3):
+the speed when -o3 is set on g++ is :
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  6
+Time (ns) for visit:   11
+Time (ns) for ternary: 2
+Time (ns) for subscript: 2
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  6
+Time (ns) for visit:   10
+Time (ns) for ternary: 2
+Time (ns) for subscript: 2
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  6
+Time (ns) for visit:   11
+Time (ns) for ternary: 2
+Time (ns) for subscript: 2
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  6
+Time (ns) for visit:   11
+Time (ns) for ternary: 2
+Time (ns) for subscript: 2
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  6
+Time (ns) for visit:   11
+Time (ns) for ternary: 2
+Time (ns) for subscript: 2
+(please ignore the wierd "drnoo" part, it's just a username that my father chose)
+
+
+how the newer syntax would probably look like:
+#include <variant>
+#include <iostream>
+struct A { int get() { return 10; } };
+struct B { double get() { return 1; } };
+struct C { float get() { return 2.1; } };
+struct data_accessed_through_visit {
+    std::variant<A, B, C> obj= C{};
+
+    inline void operator()(int) {
+        std::visit([](auto&& arg) {
+            std::cout<< arg.get();
+            }, obj);
+    }
+};
+
+int main(){
+int b=1;
+int c=2;
+{ 1, b, c} return_indexed_value(std::size_t index);//can and should be declarable on the stack for 
+//any bookkeeping information that the compiler might want to store
+//the captured values are captured during const lvalue references, so passing 1 should work
+return_indexed_value(2);
+data_accessed_through_visit a;
+a(2);
+
+//personally, i think the best solution for the problem should look something like this: 
+//{ 1, b, c} return_indexed_value(std::size_t index);
+
+return 0;
+}
