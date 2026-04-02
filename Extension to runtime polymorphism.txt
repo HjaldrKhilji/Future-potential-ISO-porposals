@@ -77,52 +77,58 @@ If Solution 2 is provided by the standard, we can make branching statements syst
 
 I really appreciate all the feedback I have received and am looking for more. These insights helped narrow my focus to the specific idea I wish to propose.
 
-code to check weather I am right (use godbolt -03):
+code to check weather I am right:
 #include <variant>
 #include <iostream>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-struct A { inline int get(){return 1;} };
-struct B { inline int get(){return 2;} };
-struct C { inline int get(){return 3;} };
+#include<array>
+std::array<int, 3> array_1={1,2,3};
+
+struct A { int get() { return array_1[0]; } };
+struct B { int get() { return array_1[1]; } };
+struct C { int get() { return array_1[2]; } };
 
 struct data_accessed_through_visit {
     static std::variant<A, B, C> obj;
-    int operator()(int) {
-        int a1;
-        std::visit([&a1](auto&& arg) { a1= arg.get(); }, obj);
-        return a1;
+   
+    inline int operator()(int) {
+        return std::visit([](auto&& arg) {
+            return arg.get();
+        }, obj);
     }
 };
-
-std::variant<A, B, C> data_accessed_through_visit::obj = C{};
-int a_val = 1, b_val = 2, c_val = 10;
+std::variant<A, B, C> data_accessed_through_visit::obj=C{};
 int user_index = 0;
 
 struct data_ternary {
-    int operator()(int index) {
-        return (index == 0) ? a_val : (index == 1) ? b_val : (index == 2) ? c_val : -1;
+    inline int operator()(int index) {
+        return (index == 0) ? array_1[0] : (index == 1) ? array_1[1] : (index == 1) ? array_1[2] : -1;
     }
 };
 
 struct data_switched {
-    int operator()(int index) {
+    inline int operator()(int index) {
         switch(index) {
-            case 0: return a_val;
-            case 1: return b_val;
-            case 2: return c_val;
+            case 0: return array_1[0];
+            case 1: return array_1[1];
+            case 2: return array_1[2];
             default: return -1;
         }
     }
 };
 
-
+struct data_indexing {
+    inline int operator()(int index) {
+        return array_1[index];
+    }
+};
 
 
 
 volatile int x = 0;
-constexpr uint64_t loop_count=100000;
+constexpr uint64_t loop_count=10000;
 static void measure_switch() {
     data_switched obj;
     for (int i=0; i++<loop_count;) {
@@ -143,16 +149,24 @@ static void measure_ternary() {
         x = obj(user_index);
     }
 }
+static void measure_indexing() {
+    data_indexing obj;
+    for (int i=0; i++<loop_count;) {
+        x = obj(user_index);
+    }
+}
 
 template<typename func_t>
 void call_func(func_t callable_obj, int arg){
     const auto start = std::chrono::steady_clock::now();
-    callable_obj();
-    const auto end = std::chrono::steady_clock::now();
 
-    std::cout<<
-    std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()
-    <<std::endl;
+    constexpr int how_much_to_loop=1000;
+    for(int i=0; i++<how_much_to_loop;){
+        callable_obj();
+    }
+    const auto end = std::chrono::steady_clock::now();
+    auto result= std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()/how_much_to_loop;
+    std::cout<<result/how_much_to_loop<<std::endl;
 
 }
 
@@ -173,8 +187,40 @@ int main() {
 
     std::cout << "Time (ns) for ternary: ";
     call_func(measure_ternary, user_index);
+   
+    std::cout << "Time (ns) for subscript: ";
+    call_func(measure_indexing, user_index);
 
     return 0;
 }
-
-
+the bench marks consistently show that these syntax constructs do matter (the smaller the index range is, the more the compiler can flatten it and know how to branch), notice how ternary is outperforming them all even though its nesting, This means that adding new syntax with the sole purpose to give compilers as much information as possible is actually useful. Consider how templates and instantiation give the compiler extra insight. why? because templates are instantiated at the point of instantiation which can be delayed upto link time. these are the benchmarks:
+benchmarks for g++:
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  33
+Time (ns) for visit:   278
+Time (ns) for ternary: 19
+Time (ns) for subscript: 34
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  33
+Time (ns) for visit:   296
+Time (ns) for ternary: 20
+Time (ns) for subscript: 35
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  34
+Time (ns) for visit:   271
+Time (ns) for ternary: 17
+Time (ns) for subscript: 33
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  34
+Time (ns) for visit:   281
+Time (ns) for ternary: 19
+Time (ns) for subscript: 32
+PS C:\Users\drnoo\Downloads> .\a.exe
+Enter index (0 for A, 1 for B, 2 for C): 2
+Time (ns) for switch:  34
+Time (ns) for visit:   282
+Time (ns) for ternary: 20
+Time (ns) for subscript: 34
