@@ -1,8 +1,10 @@
 Proposal: expanding current subscripting facilities to include runtime subscripting into homogenous lists.
-abstract: We cant index into homogenous lists using facilities like tuples because they expect a Constexpr index.
-To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
+
+abstract: We cant index into homogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
+
 Problem:
 Say you have homogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". 
+
 solution:
 A construct that would have the same semantics as an std::array(runtime indexing, and a template instantiation for every collection that it is instantiated for), but is homogenous. (I  call it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
 1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
@@ -250,3 +252,5 @@ a(2);
 
 return 0;
 }
+
+
