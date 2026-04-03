@@ -35,12 +35,12 @@ code to check weather I am right:
 #include<array>
 std::array<int, 3> array_1={1,2,3};
 
-struct A { int get() { return array_1[0]; } };
-struct B { int get() { return array_1[1]; } };
-struct C { int get() { return array_1[2]; } };
+struct A { int get() { return 1; } };
+struct B { int get() { return 2; } };
+struct C { int get() { return 3; } };
 
 struct data_accessed_through_visit {
-    std::variant<A, B, C> obj;
+    static std::variant<A, B, C> obj;
    
     inline int operator()(int) {
         return std::visit([](auto&& arg) {
@@ -49,7 +49,7 @@ struct data_accessed_through_visit {
     }
 };
 int user_index = 0;
-
+std::variant<A, B, C> data_accessed_through_visit::obj= C{};
 struct data_ternary {
     inline int operator()(int index) {
         return (index == 0) ? array_1[0] : (index == 1) ? array_1[1] : (index == 1) ? array_1[2] : -1;
@@ -124,9 +124,9 @@ int main() {
     data_accessed_through_visit obj;
 
     // Set the variant state
-    if (user_index == 0) obj.obj = A{};
-    else if (user_index == 1) obj.obj = B{};
-    else if (user_index == 2) obj.obj = C{};
+    if (user_index == 0) data_accessed_through_visit::obj= A{};
+    else if (user_index == 1) data_accessed_through_visit::obj= B{};
+    else if (user_index == 2) data_accessed_through_visit::obj= C{};
 
     std::cout << "Time (ns) for switch:  ";
     call_func(measure_switch, user_index);
