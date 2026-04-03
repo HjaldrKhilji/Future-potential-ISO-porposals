@@ -1,3 +1,6 @@
+NOTE: just to make it clear, I see my proposal as unpolished (really really unpolished) and need your counter proposal to refine it.
+Please critique me, tell me the flaws, and give me something to make this document better. Great things arent done by a persistent 17 year old, nor by an experienced programmer, but rather feedback and a heated exchange of arguments.
+
 Proposal: expanding current subscripting facilities to include runtime subscripting into homogenous lists.
 
 abstract: We cant index into homogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
