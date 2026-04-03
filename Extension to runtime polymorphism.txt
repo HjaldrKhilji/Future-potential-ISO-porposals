@@ -1,17 +1,17 @@
 NOTE: just to make it clear, I see my proposal as unpolished (really really unpolished) and need your counter proposal to refine it.
 Please critique me, tell me the flaws, and give me something to make this document better. Great things arent done by a persistent 17 year old, nor by an experienced programmer, but rather feedback and a heated exchange of arguments.
 
-Proposal: expanding current subscripting facilities to include runtime subscripting into homogenous lists.
+Proposal: expanding current subscripting facilities to include runtime subscripting into hetrogenous lists.
 
-abstract: We cant index into homogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
+abstract: We cant index into hetrogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
 
 Problem:
-Say you have homogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". 
+Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". 
 
 solution:
-A construct that would have the same semantics as an std::array(runtime indexing, and a template instantiation for every collection that it is instantiated for), but is homogenous. (I  call it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
+A construct that would have the same semantics as an std::array(runtime indexing, and a template instantiation for every collection that it is instantiated for), but is hetrogenous. (I  call it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
 1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
-2. Providing homogenous lists (unlikely to be implemented).
+2. Providing hetrogenous lists (unlikely to be implemented).
 3. Providing a specific kind of function which can have different return types based on the index passed:
 {Int_obj, double_obj, float_obj} return_indexed_value(any integer that ful fills the is integral concept index);
 //The compiler deduces the body itself.
@@ -246,7 +246,7 @@ Sorry if some of the things that I said were incorrect, but my philosophical poi
 On the question of how the syntax will look like:
 It would have the same semantics as an std::array(runtime indexing, and a template instantion for every collection that it is instantiated for), but is homegenous. (I  called it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
 1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
-2. Providing homogenous lists (unlikely to be implemented).
+2. Providing hetrogenous lists (unlikely to be implemented).
 3. Providing a specific kind of function which can have different return types based on the index passed:
 {Int_obj, double_obj, float_obj} return_indexed_value(any integer that ful fills the is integral concept index);
 //The compiler deduces the body itself.
