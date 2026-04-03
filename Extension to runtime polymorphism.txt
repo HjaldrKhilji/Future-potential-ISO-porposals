@@ -225,7 +225,7 @@ Time (ns) for subscript: 2
 
 
 
-before looking at the new solution, see the discussion that resulted in it:
+before looking for the new solution (again for the second), see the discussion that resulted in it:
 On Fri, 3 Apr 2026, 12:43 am Breno Guimarães, <******(for his privacy)> wrote:
 Hi Muneem,
 
