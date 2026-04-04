@@ -322,3 +322,13 @@ inline void operator()(int index) {
         std::cout<<return_indexed_value(index);    
 }}
 
+full discussion:
+All credits to ISO:
+small parts(the beginning of the discussion)
+https://lists.isocpp.org/std-proposals/2026/03/17393.php
+https://lists.isocpp.org/std-proposals/2026/04/17400.php
+the main discussion:
+https://lists.isocpp.org/std-proposals/2026/04/17406.php
+
+
+(for all links: click next to go forward along chat and previous to go back)
