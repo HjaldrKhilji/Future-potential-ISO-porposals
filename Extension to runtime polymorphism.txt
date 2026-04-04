@@ -3,21 +3,56 @@ Please critique me, tell me the flaws, and give me something to make this docume
 
 Proposal: expanding current subscripting facilities to include runtime subscripting into hetrogenous lists.
 
-abstract: We cant index into hetrogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
+abstract: We cant index into hetrogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler (on a intermediate code generation level) should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
 
 Problem:
-Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". 
+Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". A vector of std::variant, manual branching, or a base class that has derived class provides all the features is inefficient and verbose, why? 
+it won't lead to the compiler being able to produce proper intermediate code representation (because of the lack of intent and context) and is verbose.
+for example, will this produce good intermediate code without major overhead and without the optimizing having a change to backfire(due to lack of context and intent):
+#include<vector>
+#include<deque>
+template<typename T>
+struct Base{
+     virtual T top_wrapper();
+};
 
+template<typename T>
+struct Derived_1: Base<T>, std::vector<T>{
+      T top_wrapper() override{
+           return T{*this.top()};//T{} is just to show that it works even if top had some other return type 
+     }
+};
+template<typename T>
+struct Derived_2: Base<T>, std:: deque<T>{
+      T top_wrapper() override{
+           return T{*this.top()};//T{} is just to show that it works even if top had some other return type 
+     }
+};
+int main(){
+std::vector<Base<int>> a;
+//The compiler would probably optimize this example, but not an example where you index the vector using real time input
+return 0;
+}
+//An vector of std::variant only works if I am willing to write a helper top(std::variant<Args...> obj) function that includes std::visit to call top(), that in of itself is not only verbose but obscures intent and context
+
+The code obscures intent which would make it harder to produce optimized intermediate representation of this particular c++ program.
 solution:
+note: when I say that the compiler can optimize code, I mean, at the intermediate representation!
 A construct that would have the same semantics as an std::array(runtime indexing, and a template instantiation for every collection that it is instantiated for), but is hetrogenous. (I  call it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
 1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
 2. Providing hetrogenous lists (unlikely to be implemented).
 3. Providing a specific kind of function which can have different return types based on the index passed:
 {Int_obj, double_obj, float_obj} return_indexed_value(any integer that ful fills the is integral concept index);
 //The compiler deduces the body itself.
-A cherry on the top would be to allow any class to be based for indexing(those classes must have a particular function for providing the integer), so that you can give compilers an insight to the fact that you are potentially doing multiple subscript operations in the same chain, so the compiler can optimize that chain. For example:
+A cherry on the top would be to allow any class to be based for indexing(those classes must have a particular function for providing the integer), so that you can give compilers an insight to the fact that you are potentially doing multiple subscript operations in the same chain, so the compiler can optimize that chain.
+basically, all three solutions are the syntax and semantics of the interface to a type erasure system that:
+1. captures values by const lvalue reference.
+2. (In concept) render the value in place where it's used, and to do that by any technique that the compiler sees fit to render it at an intermediate representation level.
+3. makes code less verbose and gives compiler more context about both the relationship between the expression that indexes/defines the heterogeneous list, the context, and the program itself, just like any other branch construct(if and switch statements), but unlike other branch statements (current: if/switch/ternary), this also gives context of the area where the defintion is defined, and also gives the intent is rendering the value in place in the best way possible for the context and program where the indexing was done.
+
+For example:
 List[list[1]] the compiler can figure out ways to make this as cache friendly as possible.
-(This feature would probably work the same way if you provide an operator that converts the type to int, but again, this feature would make the intent more clearer).
+(This feature would probably work the same way if you provide an operator that converts the type to int, but again, this feature would make the intent more clearer). 
 
 End note: Languages like C++ are often faster (than assembly) for large code bases because it has programming constructs that express intent and context more explicitly. Compilers can not optimize everything possible to optimize without significant overhead. That is why inline functions exist and why variadic template expressions can be folded. in fact, at the end of this
 video, the speaker explains that very well:
@@ -225,7 +260,7 @@ Time (ns) for subscript: 2
 
 
 
-before looking for the new solution (again for the second), see the discussion that resulted in it:
+before looking for the new solution (again for the second), see the discussion that resulted in it(credits to ISO):
 On Fri, 3 Apr 2026, 12:43 am Breno Guimarães, <******(for his privacy)> wrote:
 Hi Muneem,
 
