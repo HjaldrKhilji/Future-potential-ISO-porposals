@@ -46,9 +46,10 @@ A construct that would have the same semantics as an std::array(runtime indexing
 //The compiler deduces the body itself.
 A cherry on the top would be to allow any class to be based for indexing(those classes must have a particular function for providing the integer), so that you can give compilers an insight to the fact that you are potentially doing multiple subscript operations in the same chain, so the compiler can optimize that chain.
 basically, all three solutions are the syntax and semantics of the interface to a type erasure system that:
-1. captures values by const lvalue reference.
+1. captures values.
 2. (In concept) render the value in place where it's used, and to do that by any technique that the compiler sees fit to render it at an intermediate representation level.
-3. makes code less verbose and gives compiler more context about both the relationship between the expression that indexes/defines the heterogeneous list, the context, and the program itself, just like any other branch construct(if and switch statements), but unlike other branch statements (current: if/switch/ternary), this also gives context of the area where the defintion is defined, and also gives the intent is rendering the value in place in the best way possible for the context and program where the indexing was done. 
+3. makes code less verbose and gives compiler more context about both the relationship between the expression that indexes/defines the heterogeneous list, the context, and the program itself, just like any other branch construct(if and switch statements), but unlike other branch statements (current: if/switch/ternary), this also gives context of the area where the defintion is defined, and also gives the intent is rendering the value in place in the best way possible for the context and program where the indexing was done.
+the value returned by select() and the heterogeneous set itself would be of a completely new expression type.
 
 Go already has heterogeneous lists, but I want something that can as I told Steve on a std proposal's forum:
 In short, all I want is to solve the problem where we can't tell the compiler to "render an object of any type in place at the intermediate code level". This problem is a problem because we have to do it our selves unlike in languages like GO. Once this problem is solved then heterogenous lists would be possible.
@@ -265,7 +266,7 @@ Time (ns) for subscript: 2
 
 
 
-before looking for the new solution (again for the second), see the discussion that resulted in it(credits to ISO):
+before looking for the new solution (again (but In it's rawest form) for the second), see the discussion that resulted in it(credits to ISO):
 On Fri, 3 Apr 2026, 12:43 am Breno Guimarães, <******(for his privacy)> wrote:
 Hi Muneem,
 
@@ -285,7 +286,7 @@ Thank you for your feedback ❤️❤️❤️.
 Sorry if some of the things that I said were incorrect, but my philosophical point was that compilers are layered models that need a language to consume intent and context so they product proper code, that's just how it should be, why we use compiled languages.
 On the question of how the syntax will look like:
 It would have the same semantics as an std::array(runtime indexing, and a template instantion for every collection that it is instantiated for), but is homegenous. (I  called it half open in the previous mails because that's what Stroustrup calls sequential containers). To index, you can use an integer or any type that converts to one implicitly or explicitly(just like any other half open container types). To implement this container, the language would have to provide either one of these facilities on a language level:
-1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes.
+1.Indexing user-defined objects or providing a new construct like struct/class that can be indexes. 
 2. Providing hetrogenous lists (unlikely to be implemented).
 3. Providing a specific kind of function which can have different return types based on the index passed:
 {Int_obj, double_obj, float_obj} return_indexed_value(any integer that ful fills the is integral concept index);
