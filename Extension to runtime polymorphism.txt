@@ -49,6 +49,7 @@ private:
 4.The abstract tree doesn't provide intent, it just shows and interface that is implemented by multiple classes, which is like expecting compilers to move data from lvalue references instead of simply using rvalue references.
 5.types of each override member function has to strictly match, like unlike compile time template instantion where every type argument provides fullfills a specific concept/requirement, this requires the exact interface for each overriden function. 
 6. You can't provide function overloads that take a pointer and know it's a polymorphic interface to any object, which again not only hides intent but doesn't allow you to overload based on polymorphic objects, in to provide a whole class of optimizations that apply to polymorphic objects or at least to provide optimizations like std move that already exist.
+7. it can lead to slicing even if virtual clone functions or virtual assignment operators are provided.
 ********Problem with this********
 ********Solution********
 1.provide a new construct that:
