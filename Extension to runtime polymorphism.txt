@@ -68,9 +68,9 @@ private:
 
 
 
-(old) discussion on how I got here:
+(old) discussion on how I got here(the discussion below will also have discussion(bench marks and stuff), on how it got there):
 
-
+These discussions may not be accurate but provide a good record of how I got to this proposal. (even better record than my git commit logs)
 Problem:
 Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". A vector of std::variant, manual branching, or a base class that has derived class provides all the features is inefficient and verbose, why? 
 it won't lead to the compiler being able to produce proper intermediate code representation (because of the lack of intent and context) and is verbose.
