@@ -3,7 +3,74 @@ Please critique me, tell me the flaws, and give me something to make this docume
 
 Proposal: expanding current subscripting facilities to include runtime subscripting into hetrogenous lists.
 
-abstract: We cant index into hetrogenous lists using facilities like tuples because they expect a Constexpr index.To fix this, this proposal proposes a new construct to give compiler intent and context that normal branching constructs or patterns relying on std::visit don't.  The compiler (on a intermediate code generation level) should have complete freedom to store any book keeping information (no space complexity constraints) that it wants as long as the result is higher latency for accessing the values.
+abstract: A new expression value type to make indexing into heterogeneous lists easy to reason about and provide gurrentied semantics that provide gurrentied optimizations and allows users to provide their own semantics for this new expression value type.
+Problem:
+So imagine a base class (as Mr.steve from the iso mailing list shows):
+class Storage
+{
+public:
+
+    class Data {// TBD };
+    class Key {// TBD};
+
+    inline void put (const Key &, const Data &) { storage[discriminator(data)].put(data);}
+    Data get (const Key &) const { return storage[discriminator(data)].get(data);}
+
+private:
+
+    int discriminator (const Data &) { // do something}
+
+    class Impl
+
+    {
+    public:
+        virtual void put (const Key &, const Data &) = 0;
+        virtual Data get (const Key &) const = 0;
+    };
+
+    class FlavorOne : public Impl
+
+    {
+    private:
+        void put (const Key &, const Data &) override {// do something}
+        Data get (const Key &) const override {//do something}
+
+        std::vector<Data> data;
+    };
+
+    FlavorOne flavorOne;
+
+********Problem with this********
+1.You can't instantiate templates of the right derieve class using class base class reference/pointers. Why? Because virtual functions can't be templates. This is a sore thumb that was the last straw for my virtual machine code.
+2.You can't move a derived class object.
+3.it is verbose because:
+1. templates don't work
+2.moves don't work (hence gonna have to do optimizatioms myself)
+3 every operator that you want to use polymorphically has to be a member function.
+4.The abstract tree doesn't provide intent, it just shows and interface that is implemented by multiple classes, which is like expecting compilers to move data from lvalue references instead of simply using rvalue references.
+5.types of each override member function has to strictly match, like unlike compile time template instantion where every type argument provides fullfills a specific concept/requirement, this requires the exact interface for each overriden function. 
+6. You can't provide function overloads that take a pointer and know it's a polymorphic interface to any object, which again not only hides intent but doesn't allow you to overload based on polymorphic objects, in to provide a whole class of optimizations that apply to polymorphic objects or at least to provide optimizations like std move that already exist.
+********Problem with this********
+********Solution********
+1.provide a new construct that:
+{1, std::string{}, obj2} select_name(1);
+1. The select_name itself can or cannot(based on what you guys see fit) be a new expression type.
+2. The values inside HAVE(for the advantages to work) a new expression type.
+ ****The advantages of the second point:****
+1. Can be passed to templates to instantiate a template where just like normal types, it can be passed to the templates that are called by that template.
+2.You can use move operations.
+3.Is not verbose because it doesn't have the same issues abstract/polymorphic class Hirearchies do.
+4. Provides intent on a abstract tree level because it's a new expression type which can (just like how rvalues gurrentied(copy elision) and provide optimizations(move semantics)) can also with time have optimizations provided to it by both gurrentied and new optimization semantics (similiar to how functions(especially constructors) can be overloaded to take rvalue references to optimize code).
+5. No type needs to match, just like templates, all members functions used must be provided by each type, and each type should be able to be passed to any function that an object at any index can be passed to 
+6. Specific function overloads can be provided to provide a class of optimizations and make the code scream the intent that here an heterogeneous set element is passed, so what can we do to make it optimal.
+********Solution********
+
+
+
+
+
+(old) discussion on how I got here:
+
 
 Problem:
 Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". A vector of std::variant, manual branching, or a base class that has derived class provides all the features is inefficient and verbose, why? 
