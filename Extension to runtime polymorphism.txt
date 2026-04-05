@@ -66,11 +66,144 @@ private:
 
 
 
-
-
 (old) discussion on how I got here(the discussion below will also have discussion(bench marks and stuff), on how it got there):
 
+
+
 These discussions may not be accurate but provide a good record of how I got to this proposal. (even better record than my git commit logs)
+
+Thank you for your feedback ❤️ ❤️ 
+****Short answer****: the semantics and implementation would look something like this:
+Func(selecter(index)): (if func was a member function then every type must have func but the possible implementations will remain the same, selectors can also be further constraints by concepts, just like templates can be)
+***Semantics***
+Overload resolution is done to find the N number of func() functions, where N is the amount of types. In both cases,(for every x func() found) Func can be either of two:
+1. It's a normal function taking T, in which case "selecter(index)" expression decays to T. The semantics (for the programmer) of usage of that object of type T remains the same. 
+the implementation in this case would look like:
+***Implementation***(up to the compiler but can be either of these or many more than thede):
+(Note: you don't have to use a particular representation of the objects with a particular instation form of the code)
+***Code instantion for each type***
+Where instating a particular function or a block can lead to more overhead (instruction cache trashing) than vtables or similiar techniques, then vtables would be used, else branches or jump tables, code of the functions for multiple types can be shared and jumped to by multiple types. Here it is more flexible because the compiler can decide on a per type basis in the function body. This all happens at the point instantion which is the first time when func() is called. Once the body is expanded for each type.
+***Storage of objects***
+each group of objects of the same type have their own array, and each of that array(right before the arrays of the rest of objects) is stored in another array (say as void* conceptually). Then the compiler takes your subscript and figures the best calculations that it can do to find the best way to subscript these two arrays, so say the selecter is: {1,2, 2.2, 'a'} selecter(int) now the compiler can be:
+( (index xnor 3) Shift right 1)
+as the index for the array containing arrays of the same object. Then the index inside of each array could be:
+Index % 3
+Modern compilers already use complex techniques to find the best floating point representations for floats, so this possible implementation should not be hard. This possible implementation can be one of many the compilers pull up its sleeve. In fact, I was using pmr::monolithic resource with pmr::allcoator in my code but If I had to, I would use this techniques for subscripting in it. This would probably require somes math formulas(gonna work on it).
+***Storage of objects***
+**Technique number two is from my virtual machine.**
+Memory for all objects is allocated first (using pmr:: monolithic memory resource, then a vector<void*> was constructed containing pointers to objects. In this case would be array of void* (in concept ofcource). The goal would be to not store or check for type information at runtime, but instead using some formula to derive what I derived below:
+say the selecter is: {1,2, 2.2, 'a'}
+User wants 'a', instead of storing or checking the type of a at runtime, we compute the index(in the jump table) to the code for the type "char" by ((index xnor 3) shift right 1), then we jump into the jump table. The code representation of each branch of the jump table can be as I described before.
+***Second case:***
+2. If func() is special because it doesn't take a normal argument, but rather an argument T of the new expression type, then the user can be provided with additions constructs that help him manually inspect The obj. I would say it can look like this
+For {1, 1.1, obj}selector(index)
+Selector{1}
+Int func(const/volatile/or-non int^ obj)
+{
+//Custom code
+}
+//float isn't here because the func() for float was a normal func() that takes float
+Template<typename T>
+T func(const/volatile/or-non T^ obj){
+//Could be used for constructors as well
+Return std::move(obj);
+//Virtual clone functions are buggy because what if you are assigning to a dereieved class from a *base_obj!? That's why I say that virtual functions are an incomplete solution to everything!
+//Type T^ can be the return type as well
+}
+
+
+
+
+Individual answers to your questions:
+
+A prototype implementation would help a lot. 1) It might help us understand what you really want (because we all understand at most 70%). 2) We suspect that it is just syntactic sugar and under the hood it is the same as what we can do right now which would mean that the optimizations are the same. Your prototype would show that we are wrong. 3) It would force you to think through all the problems and provide solutions to them. Without a proof that what you propose is possible it is too high risk to consider for standardization. We standardize things we know are possible (or have reasonable belief that they are possible).
+***Answers***
+1.i am sorry that I underestimated the importance of possible implementation, but it's just that I am trying to play all sides of the discussion, and some people won't like to discuss low level details (cuz they see it as implementation details).
+2. Are rvalues syntactical sugars? Why no?
+Because they provide move semantics, guaranteed optimizations, and allows the compiler to optimize every move object away because accessing move is undefined anyway, and moved object can be get ridden of unless the destructor contributes to the observable behaviour.
+3. You are completely right and I am sorry for underestimating it.
+
+
+
+> 1.I showed my own code to show the issue with verbosity of switch case statements
+Yes, you showed us a single example out of the millions of code bases that exist around the world. That alone does not make it worth standardizing. Nobody has checked if there are better design choices for your code.
+***Answer***
+Ouch, but you are right. I know my example isn't important sorry for bringing it up too much, I showed it because some asked for a real example, and my example was one that I could relate the most to.
+
+
+
+
+
+>And verbosity alone is also not a reason for standardization. We have explained before that template for and reflection (if used correctly) can reduce the verbosity of the code (but still compile to the same thing).
+***Answer***
+What I meant, wasent a fancy syntax for switch case statements to reduce verbosity, but rather to provide new semantics that decrease the verbosity of optimizations that one has to do. For example:
+1.to std::move from a variant, you have change your entire design pattern to revolve around that issue. 
+2. You can't help the user provide overloads that target unions.
+
+
+> 2. Then, I went ahead and tried to debunk why virtual functions don't allow templates to be used, can't be moved, and are too rigid and incomplete for this task.
+
+>I see several proposals here: 1) A proposal to allow templates for virtual functions. 2) Allowing move semantics for polymorphic types (maybe by allowing the move constructor to be virtual?). However, I only have a polymorphic type with a pointer or reference which means that this is not a question about constructors. I don’t think there is a restriction on move assignment that it couldn’t be virtual. It is always better to push for small changes in existing features (especially if they don’t only help you in your problem, but also help others) instead of introducing new features.
+***Answer***
+1. Virtual functions cant be templates because that would lead to confusion on which function overrdies which.
+2.move assignment can be virtual but thats worse because again weak foundations lead to this:
+Dereieved a = std::move( *base_ptr );
+Which means that the base class version of operator=() would be called for dereieved A. Which is a massive issue. This is a difficiency for all operators or virtual functions that make you think twice before using one. This is unlike mine, where the function chosen for "T^ obj" is known at compile time.
+
+
+>Concerning moving polymorphic objects: Right in the beginning of object oriented programming people also thought about a clone() member function to do polymorphic copies. Move semantics didn’t exist back then. There is nothing holding you back to write a move() member function that does a polymorphic move in the same way. Just saying that there is an easy solution.
+***Answer***
+Again, imagine this:
+Dereieved B;
+B.clone(*base_obj)
+This suffers from the same issue that I discussed that virtual operator functions suffer from in the previous answer.
+
+> 3. People do care about move semantics because they are what makes RAII so efficient and fun to use.
+RAII was invented long before move semantics existed. And people wrote efficient code in C++ for over 2 decades before move semantics were available. Things were just a little harder before.
+***Answer***
+Things were a little harder, but not everything was scalable. In that move semantics didn't just change std::move, it allows the compiler to built objects in place and even gurrenties it sometimes. Before, you had to do book keeping in your mind ( I remember using C and C++ (without using move semantics) when I was 13 to 16). Infact book keeping burden is why I moved to c++ because it just leaves it all to the compiler. Rvalues are great example, it's all upto the compiler and I don't have to deal with unless I provide rvalue function overloads.
+
+
+> 4. Relying on gurrentied semantics isn't compiler magic, it's the fundamental building blocks of any language.
+Currently, your “guaranteed semantics” are magic to us. We are unsure what you want to guarantee by your semantics (maybe you want to guarantee that indexes are used; but I don’t think it is smart to put that into the standard because depending on the architecture other solutions might be faster -> lookup tables used to be faster than switches but nowadays memory is so much slower and branch prediction is so much better that the opposite is true now in certain cases => this means: let the compiler decide on the most efficient implementation).
+***Answer***
+By gurrentied semantics, I mean, that for any object of type T of this new expression value type:
+For now potential ones might be:
+1.The code branch is to be gurrentied to be found at compile time if the index is constexpr. (Avoid repeating code for runtime indexing and compile time indexing, by one using this and the other tuple).
+2. Returning T^ should be cheap *move*(incur just a pointer copy cost) all the list of items and any book keeping information into the parent function stack at runtime.
+3. If the subscript is used once in a loop, then it should be gurrentied that branching based on the correct code for the type won't happen again, though the indexing among objects of the same type can happen.
+4. Even though T^ can be returned, it must be casted (using a new cast operator) to T to be assigned to a object of type other than T^
+I certainly fail to see the parallels between your proposal and rvalues. I would rather claim that rvalues was a bottom up design: we first knew how to do it and then thought about the syntax. Also copy elision and return value optimization was introduced into the standard because some compilers did it. Named return value optimization was introduced into the standard even later. The chicken and egg situation is certainly reversed compared to your proposal. Also, rvalues (if I’m not mistaken) go down to the IR and don’t optimize on the level of the AST. If your optimizations can only be done on the AST, this is certainly a totally different thing.
+
+***Answer***
+1. Our compilers are already smart, but the issue is that we don't have a construct that provides semantics. So we have a lot to do it:
+Vtables for every line code or every few lines in the function body, branches if you want, or anything the compiler sees fit. We have the infrastructure but not the semantics.
+
+2.Certain rvalue optimizations don't happen at the AST levels, for example:
+1. the move semantics in which the compiler chooses which function to call.
+2. Copy elision.
+Yes there are other optimizations that take advantage of the fact that accessing rvalue after move is undefined but those are not language optimizations and for those rvalues can be seen as syntaxtical sugar, and so can my one be.
+
+
+Don’t just use “guaranteed semantics” as a buzz word, but actually describe what you want to guarantee. And as I said before: you need to provide more than just a single example (your Turing virtual machine) why compile time known heterogeneous lists are useful to others. The only thing that I found on the internet is for runtime generated heterogeneous lists.
+
+***Answer***
+1. I provided the gurrentied in th answer to your paragraph numbered as ">4".
+2. The reason compile time known heterogeneous lists are good is because it expands the notion of metaprogramming to arrays. 
+3. The facilities provided by the solution to heterogeneous lists would end up providing a new expression value type that as I said would provide safer move semantics (no clone functions), the user a chance to handle them (by specific overloads), and the gurreenties that I specified.
+
+
+> 5. Then, I argued that std::visit is a fancy construct for switch that fails at removing code that in your words " does nothing ", which is failure that matters because we do right code that does nothing, in fact in my virtual machine, instead two switch cases, one for runtime switching and the other for compile time, I wrote one, and to implement the compile time one, I simply made it a template that took a integer index and gives it to the other function. This technique worked and assembly was shortened by a lot.
+
+
+Typically you would not write switch statements for templates, but use a non-type template argument and specialize templates on that. This is actually how template metaprogramming was started by Erwin Unruh. And if the optimizations for std::visit are insufficient (on one compiler) we should work on better optimizations on that because std::visit is already in the standard and people are already using it. It is always a good idea to make existing code faster if possible by just changing the compiler. I already mentioned before that in theory std::visit could also be implemented by indexing (automatically, as an optimization).
+
+***Answer***
+1.I did the same, it was a int template argument, I may be 17, but still not that bad at code.
+2. Std::visit doesn't can't architecturally:
+1. Fix the virtual clone() function problem.
+2. Can only return a variant object, and can't return I objects of different types.
+
 Problem:
 Say you have hetrogenous values that you want to index, you are forced to use branching statements, polymorphism, or std::visit, all of which obscure the intent and context needed for the compiler to optimize those subscripts. Branching is the fastest so far, but even branching is more obscure and leads to code that in the words of Bjarne Stroustrup is "random code". A vector of std::variant, manual branching, or a base class that has derived class provides all the features is inefficient and verbose, why? 
 it won't lead to the compiler being able to produce proper intermediate code representation (because of the lack of intent and context) and is verbose.
