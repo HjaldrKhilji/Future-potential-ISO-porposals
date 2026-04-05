@@ -68,7 +68,32 @@ private:
 
 (old) discussion on how I got here(the discussion below will also have discussion(bench marks and stuff), on how it got there):
 
+Thanks for your feedback ❤️❤️❤️🙂
+here is a way to make this type safe, which is unless the index is constexpr, the return value is an object like std::variant. Your abstraction is as I said fragile:
+1.slicing even if you provide a virtual clone function, so my technique is more type safe.
+2.By gurrentied optimizations, I meant, the (subscript) operation is to be completely inlined if the index is constexpr. This would again help someone avoid having two define two functions, one constexpr and one runtime polymorphic (virtual).
+3. You can't pass storage[index] (in your example) to a function, expecting the right overload to be called(in your example that function would have different overloads for different "flavors"), which leads to all functions possible be virtual members, and for operators or functions meant to return a copy *this, we still have an issue of slicing; virtual members are incomplete.
+4.the user can't handle storage[index] in overloads, for example, there might be a overload accepting storage&, but there can't be an overload accepting storage& used for runtime polymorphism. This is an issue because we are mixing references with polymorphism.
+5. How is it not type safe? How are virtual clone functions more type safe?
+Hide quoted text
 
+On Mon, 6 Apr 2026, 3:29 am Steve Weinrich via Std-Proposals, <std-proposals@lists.isocpp.org> wrote:
+Hi Muneem,
+
+Yes, I forget the closing ]...sorry.
+
+I believe that you keep missing an important point.  What I have proposed is an abstraction.  All of your points keep breaking the abstraction.
+
+Guaranteed optimization - perhaps you mean Guaranteed performance?  If so, Storage can easily guarantee performance.  For any given operation it is the simply the worst of all the "flavors."
+
+The user should not know or care about the exact implementation of Storage.  They simply follow the interface.  They do not know or care which container within Storage is being used.
+
+As I previously stated, you are fixated on a mechanism that will return a different type based on some criteria.  IMHO, there is no way to make that type-safe.
+
+Cheers,
+Steve
+
+after this email:
 
 These discussions may not be accurate but provide a good record of how I got to this proposal. (even better record than my git commit logs)
 
