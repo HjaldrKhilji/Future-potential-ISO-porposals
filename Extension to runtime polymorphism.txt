@@ -1,8 +1,7 @@
 NOTE: just to make it clear, I see my proposal as unpolished (really really unpolished) and need your counter proposal to refine it.
 Please critique me, tell me the flaws, and give me something to make this document better. Great things arent done by a persistent 17 year old, nor by an experienced programmer, but rather feedback and a heated exchange of arguments.
 
-Proposal: expanding current subscripting facilities to include runtime subscripting into hetrogenous lists.
-
+Proposal: Proposing a new value type for subscripting heterogeneous lists.
 abstract: A new expression value type to make indexing into heterogeneous lists easy to reason about and provide gurrentied semantics that provide gurrentied optimizations and allows users to provide their own semantics for this new expression value type.
 Problem:
 So imagine a base class (as Mr.steve from the iso mailing list shows):
