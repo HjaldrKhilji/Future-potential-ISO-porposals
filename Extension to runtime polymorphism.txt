@@ -52,6 +52,48 @@ private:
 7. it can lead to slicing even if virtual clone functions or virtual assignment operators are provided.
 ********Problem with this********
 ********Solution********
+There would now be 2 new expression value types and one type included by
+this proposal:
+1. Every object in the list would be of an expression value called
+type_set(selector). Typeset in this case is a operator that returns a
+unique type for every selector, so you cant assign an object thatd
+potentially from one selector into another, without it decaying to T^
+first. This is important because the homogenous itself is compile time
+fixed (the types at each index are fixed), so any mistake should lead to an
+exception and if the index used was constexpr then a compiler error. This
+simplified the notion of handling errors and type safety by providing a
+intermediary type to handle code generation, all the potential gurrenties,
+compile time errors, and exceptions.
+Std::variant fails at this because not only if is verbose ( I know you guys
+don't care, so really sorry), but I enforcing fixed types in each index is
+automated as well, which of course no container can provide, doing such
+checks with tuples used with " for templates " would as you can imagine be
+tiresome and hard to reason about. Tuple fails because tuples have fixed
+types that can't be checked at compile time, so basically
+selector(index)=selector(index) would compile but only throw if type didn't
+match at runtime. If the indexes are constexpr and it didn't match then
+compiler is to issue a diagnostic message.
+2. A T^, that this type can decay into, and for which the user can provide
+overloads for.
+The implementation for this 1 expression value type decaying into T^
+remains the same: https://lists.isocpp.org/std-proposals/2026/04/17640.php
+(got to the implementation part))
+When ever this
+3. The heregenous list itself.
+The heterogeneous would be a new container(implementation)or std::array of
+the new type_set(selector) expression type. As I said, each index would
+have fixed types, but I also want to add that assigning from one
+heterogeneous list to another is not allowed(a diagnostic message would be
+issued), to promote safer code practices.
+
+
+
+***previous discussions and solutions:***
+
+
+
+
+
 1.provide a new construct that:
 {1, std::string{}, obj2} select_name(1);
 1. The select_name itself can or cannot(based on what you guys see fit) be a new expression type.
