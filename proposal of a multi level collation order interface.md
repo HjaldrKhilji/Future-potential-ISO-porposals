@@ -6,7 +6,7 @@
 
 
 
-This informal and incomplete document tries to justify and convince the need for a multi-level-collation algorithm interface in C++, by outlining the motivations, and providing an reference implementation, to show the areas of implementation-defined optimization if such an interface is standardized. 
+This informal and incomplete document tries to justify and convince the need for a multi-level-collation algorithm interface in C++, by outlining the motivations, and providing an reference implementation, to show the areas of implementation-defined optimization if such an interface is standardized.
 
 
 
@@ -106,7 +106,7 @@ In this example, we can remove the IP version part comparison, since private ipv
 
 
 
-As one can see, the motivation is to be able to specify the order of strings based on arbitrary rules. 
+As one can see, the motivation is to be able to specify the order of strings based on arbitrary rules.
 
 
 
@@ -130,7 +130,7 @@ D E F
 
 
 
-Then the keys 0-0x00 00 FF to: 
+Then the keys 0-0x00 00 FF to:
 
 
 
@@ -158,19 +158,15 @@ If any byte is 00, it must be omitted, aside from the ones explicitly mentioned 
 
 
 
-There is a issue though, that our example in 1.1 is actually based on context(of the whole string) rather than just the characters themselves, hence our algorithm requires a helper algorithm that maps characters after a specified delimiter (in our case "/") to something else, which in our case is something to be at the top tier (have the widest possible numeric range). The other context based check that we have is defining the difference between ipv4 and ipv6, such a difference could again be defined by the encounter of a specified character or a simple regex expression. This leaves us with the need of two functions for encoding strings into different things based on context:
+There is a issue though, that our example in 1.1 is actually based on context(of the whole string) rather than just the characters themselves, hence our algorithm requires a helper algorithm that maps characters after a specified delimiter (in our case "/") to something else, which in our case is something to be at the top tier (have the widest possible numeric range). The other context based check that we have is defining the difference between ipv4 and ipv6, such a difference could again be defined by the encounter of a specified character or a simple regex expression. This leaves us to rely on processes regex expressions the whole time, such regex expression could in fact be a simple character.
 
 
 
-One relies on the presence of a range of characters (or a delimiter)
 
 
 
-The second relies on a regex expression.
 
-
-
-in our case, since each character would fit into 1 byte, even with additional context based mapping, since ipv4 representations normally are in the base 10 form of 4 bytes, Where as ipv6 is in base 16, furthermore, the rest of the characters (":", "/", "."), are all assigned the value 0.
+in our case, since each character would fit into 1 byte, even with additional context based mapping, since ipv4 representations normally are in the base 10 form of 4 bytes, Where as ipv6 is in base 16, we would use 1 bytes per level, furthermore, the rest of the characters (":", "/", "."), are all assigned the value 0, which further makes it easier to fit them. Since its better to store a processed regex expression once and use it again and again, then to using a function to process a regex expression every time, we would do the former, hence there would be one function instead that will only allow us to rely on a structure called 
 
 
 
@@ -185,12 +181,6 @@ The first goal is to defined every layer and the characters at each one, for tha
 
 
 template<typename T, std::integral E>
-
-
-
-struct collation\_table{
-
-
 
 requires(T<T<E>> a, T<E> b, E c){
 
@@ -264,11 +254,43 @@ c<=>c;//to allow simple optimizations on the infrangible integral element type.
 
 
 
-collation\_table(T<T<E>>);
+struct collation\_table{
+
+
+
+constexpr encode\_regex\_into\_table(std::string\& regex\_expression);
+
+constexpr encode\_regex\_into\_table(std::string\&\& regex\_expression);
+
+//avoids std::regex to avoid inefficiency, so the implementation can use alternative techniques.
+
+
+
+constexpr change\_collation\_table(T<T<E>>\&);
+
+
+
+constexpr change\_collation\_table(T<T<E>>\&\&);
 
 
 
 
+
+constexpr collation\_table(T<T<E>>\&);
+
+constexpr collation\_table(T<T<E>>\&\&);
+
+
+
+constexpr operator=(collation\_table<T,E>\&);
+
+constexpr operator=(collation\_table<T,E>\&\&);
+
+
+
+//our main collation algorithm
+
+constexpr collate(T<E>\& list\_to\_be\_collated);
 
 
 
@@ -278,55 +300,19 @@ collation\_table(T<T<E>>);
 
 The every element of T<T<E>> must be a T<E> with sorted elements.
 
+### 
 
+### Hints to make it work yourself (2.2)
 
-The collation algorithm is defined as:
+The first thing that you notice is that the collation table must be processed first, then regex will do the encoding of characters to differentiate them from the same ones that are found in some other context. lets take example:
 
+say T<T<E>> used to construct the collation table is:
 
+std::vector<std::vector<char>>, and the content are so follows:
 
-template<typename T, std::integral E>
+{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, all of them are gonna be given internal sort keys, while the characters not mentioned will have the sort key 0, that is that they wont be considered at all when encountered in a string. Say our regex is as follows:
 
-
-
-collation(collation\_table<T, E>, T<T<E>> list\_to\_be\_collated);
-
-
-
-We must also define a helper encoding algorithm to translate characters based on context:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(?: (?: ( ?:\[\[digit]\[abcdef]]:){0, 4}  ){} )
 
 
 
