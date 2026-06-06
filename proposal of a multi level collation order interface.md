@@ -180,57 +180,29 @@ The first goal is to defined every layer and the characters at each one, for tha
 
 
 
-template<typename T, std::integral E>
+template<template<typename U> T, std::integral E>
 
-requires(T<T<E>> a, T<E> b, E c){
-
-
-
-a.end();
+requires(T<T<E>> a, T<E> b, E c) {
 
 
 
-a.begin()++;
+&#x09;a.end();
 
 
 
-a.size();
+&#x09;a.begin()++;
 
 
 
-a=a;
+&#x09;a.size();
 
 
 
-decltype(a) d= a;
+&#x09;a=a;
 
 
 
-
-
-
-
-b.end();
-
-
-
-b.begin()++;
-
-
-
-b.size();
-
-
-
-b=b;
-
-
-
-decltype(b) e= a;
-
-
-
-b\\\[0];//allow for possible binary searches
+&#x09;decltype(a) d= a;
 
 
 
@@ -238,15 +210,43 @@ b\\\[0];//allow for possible binary searches
 
 
 
-c=c;
+&#x09;b.end();
 
 
 
-decltype(c) f= c;
+&#x09;b.begin()++;
 
 
 
-c<=>c;//to allow simple optimizations on the infrangible integral element type.
+&#x09;b.size();
+
+
+
+&#x09;b=b;
+
+
+
+&#x09;decltype(b) e= a;
+
+
+
+&#x09;b\\\[0];//allow for possible binary searches
+
+
+
+
+
+
+
+&#x09;c=c;
+
+
+
+&#x09;decltype(c) f= c;
+
+
+
+&#x09;c<=>c;//to allow simple optimizations on the infrangible integral element type.
 
 
 
@@ -254,47 +254,47 @@ c<=>c;//to allow simple optimizations on the infrangible integral element type.
 
 
 
-struct collation\_table{
+struct collation\_table {
 
 
 
-constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_expression);
+&#x09;constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_expression);
 
-constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& regex\_expression);
+&#x09;constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& regex\_expression);
 
-//avoids std::regex to avoid inefficiency, so the implementation can use alternative techniques.
-
-
-
-constexpr collation\_table\& change\_collation\_table(T<T<E>>\&);
+&#x09;//avoids std::regex to avoid inefficiency, so the implementation can use alternative techniques.
 
 
 
-constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\&);
+&#x09;constexpr collation\_table\& change\_collation\_table(T<T<E>>\&);
+
+
+
+&#x09;constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\&);
 
 
 
 
 
-constexpr  collation\_table(T<T<E>>\&);
+&#x09;constexpr  collation\_table(T<T<E>>\&);
 
-constexpr  collation\_table(T<T<E>>\&\&);
-
-
-
-constexpr collation\_table\& operator=(collation\_table\&);
-
-constexpr collation\_table\& operator=(collation\_table\&\&);
+&#x09;constexpr  collation\_table(T<T<E>>\&\&);
 
 
 
-//our main collation algorithm
+&#x09;constexpr collation\_table\& operator=(collation\_table\&);
 
-template<typename U= T>//useful in case, T is a static container whose size is encoded in its size.
+&#x09;constexpr collation\_table\& operator=(collation\_table\&\&);
 
-constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed);//prepares for collation, such that two of the ones processed by this function could be collated by simple using "==" operator.
 
-constexpr bool collate(T<E>\& a, T<E>\& b);//collates between two elements, it could be faster for one of collations because regex groups don't have to be stored, but rather compared one by one, with the ones before getting a higher precedence (basically lexicographically sorting).
+
+&#x09;//our main collation algorithm
+
+&#x09;template<typename U= T>//useful in case, T is a non dynamic container whose size is encoded in its size, in which case, you must be extra Extra careful.
+
+&#x09;constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed);//prepares for collation, such that two of the ones processed by this function could be collated by simple using "==" operator.
+
+&#x09;constexpr bool collate(T<E>\& a, T<E>\& b);//collates between two elements, it could be faster for one of collations because regex groups don't have to be stored, but rather compared one by one, with the ones before getting a higher precedence (basically lexicographically sorting).
 
 
 
@@ -354,103 +354,161 @@ The main notion of collation is to identify characters based on characters, henc
 
 Also note that the example below is slow since it relies on std::regex rather than better alternatives.
 
-template<typename T, std::integral E>
-
-struct collation\_table{
+template<template<typename U> T, std::integral E, template<typename Y> Inner=T> // inner is useful if the size is a part of the type specialization. In anycase, the size of the inner most dimension should be equal to the size of the outer most. 
 
 
 
-T<T<E>> internal\_table;
-
-T<T<std::array<E,3>>> internal\_sort\_keys;
-
-std::regex internal\_regex; 
+struct collation\_table {
 
 
 
-constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_a){
+&#x09;T<T<E>> internal\_table;
 
-internal\_regex= a;
+&#x09;T<T<Inner<E>>> internal\_sort\_keys; // the representation could of course be optimized by strictly using non dynamic storage but that would reduce the flexibility of changing the collation table later. I believe a provision for statement metaprogramming could help these issues.
 
-return \*this;
-
-
-
-}
-
-constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& a){
-
-internal\_regex= std::move(a);
-
-return \*this;
-
-}
+&#x09;std::regex internal\_regex;
 
 
 
-constexpr collation\_table\& change\_collation\_table(T<T<E>>\& a){
+&#x09;constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_a) {
 
-internal\_table=a;
+&#x09;	internal\_regex= a;
 
-return \*this;
-
-}
+&#x09;	return \*this;
 
 
 
-constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\& a){
+&#x09;}
 
-internal\_table=std::move(a);
+&#x09;constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& a) {
 
-return \*this;
+&#x09;	internal\_regex= std::move(a);
 
-}
+&#x09;	return \*this;
 
-
-
-
-
-constexpr collation\_table(T<T<E>>\& a):internal\_table{a}{
+&#x09;}
 
 
 
-}
+&#x09;constexpr collation\_table\& change\_collation\_table(T<T<E>>\& a) {
 
-constexpr collation\_table(T<T<E>>\&\& a):internal\_table{std::move(a)}{
+&#x09;	internal\_table=a;
+
+&#x09;	return \*this;
+
+&#x09;}
 
 
 
-}
+&#x09;constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\& a) {
 
+&#x09;	internal\_table=std::move(a);
 
+&#x09;	return \*this;
 
-constexpr collation\_table\& operator=(collation\_table\&)=default;
-
-constexpr collation\_table\& operator=(collation\_table\&\&)=default;
+&#x09;}
 
 
 
 
 
-constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed){
+&#x09;constexpr collation\_table(T<T<E>>\& a):internal\_table{a} {}
 
-//assuming the internal regex expression is not there, therefor skipping it:
-
-for(auto x: list\_to\_be\_collated){
-
-auto iter= std::ranges::find(list\_to\_be\_collated, x);
-
-if(iter!=std::end()){
+&#x09;constexpr collation\_table(T<T<E>>\&\& a):internal\_table{std::move(a)} {}
 
 
 
-}
 
-}
 
-}
+&#x09;constexpr collation\_table\& operator=(collation\_table\&)=default;
 
-constexpr bool collate(T<E>\& a, T<E>\& b);
+&#x09;constexpr collation\_table\& operator=(collation\_table\&\&)=default;
+
+
+
+&#x09;template<typename U= T>
+
+&#x09;constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed) {
+
+&#x09;	//assuming the internal regex expression is not there, therefor skipping it:
+
+&#x09;	std::size\_t size\_of\_result=0;
+
+&#x09;	U<E> result;
+
+&#x09;	if constexpr (std::is\_user\_declared<^^MyClass::reserve>||std::is\_user\_declared<^^MyClass::push>)  {
+
+&#x09;		for(auto x: list\_to\_be\_collated){
+
+&#x09;			size\_of\_result+= ( std::ranges::find(internal\_table, x)!=std::end(internal\_table) )? 1: 0;
+
+&#x09;		}
+
+&#x09;		if(std::is\_user\_declared<^^MyClass::reserve>) {
+
+&#x09;			result.reserve(list\_to\_be\_processed.size());//just to show case the possible room of optimizations
+
+&#x09;		}
+
+&#x09;	}
+
+&#x09;	for(auto x: list\_to\_be\_collated) {
+
+
+
+&#x09;		auto iter= std::ranges::find(internal\_table, x);
+
+&#x09;		if(iter!=std::end()) {
+
+&#x09;			if(std::is\_user\_declared<^^MyClass::push> \&\& !std::is\_user\_declared<^^MyClass::reserve>) { 
+
+&#x09;				//I think dynamic non contagious containers should not be supported (bad idea to support them), as shown below:
+
+&#x09;				std::vector<E> temp(internal\_table.size()\*size\_of\_result);
+
+&#x09;				for(E individual: \*std::next( std::begin(internal\_sort\_keys), iter-std::begin(list\_to\_be\_collated)  )  )
+
+&#x09;				{
+
+&#x09;					temp.push(individual);				
+
+&#x09;					}
+
+&#x09;				for(std::size\_t i=0; i<internal\_table.size(); i++){
+
+&#x09;					for(std::size\_t j= i; j<size\_of\_result; j+=4){
+
+&#x09;						result.push(temp\[j]);					
+
+&#x09;						}
+
+&#x09;					}
+
+
+
+&#x09;				}
+
+&#x09;			else{
+
+&#x09;				//todo for contiguous containers
+
+&#x09;				}
+
+
+
+&#x09;			}
+
+
+
+
+
+&#x09;		}
+
+&#x09;	}
+
+&#x09;}
+
+&#x09;constexpr bool collate(T<E>\& a, T<E>\& b);
 
 
 
