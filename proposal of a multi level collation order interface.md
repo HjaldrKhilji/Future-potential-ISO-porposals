@@ -258,43 +258,45 @@ struct collation\_table{
 
 
 
-constexpr encode\_regex\_into\_table(std::string\& regex\_expression);
+constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_expression);
 
-constexpr encode\_regex\_into\_table(std::string\&\& regex\_expression);
+constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& regex\_expression);
 
 //avoids std::regex to avoid inefficiency, so the implementation can use alternative techniques.
 
 
 
-constexpr change\_collation\_table(T<T<E>>\&);
+constexpr collation\_table\& change\_collation\_table(T<T<E>>\&);
 
 
 
-constexpr change\_collation\_table(T<T<E>>\&\&);
+constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\&);
 
 
 
 
 
-constexpr collation\_table(T<T<E>>\&);
+constexpr  collation\_table(T<T<E>>\&);
 
-constexpr collation\_table(T<T<E>>\&\&);
+constexpr  collation\_table(T<T<E>>\&\&);
 
 
 
-constexpr operator=(collation\_table<T,E>\&);
+constexpr collation\_table\& operator=(collation\_table\&);
 
-constexpr operator=(collation\_table<T,E>\&\&);
+constexpr collation\_table\& operator=(collation\_table\&\&);
 
 
 
 //our main collation algorithm
 
-constexpr collate(T<E>\& list\_to\_be\_collated);//encodes if there are any processed regex stored
+template<typename U= T>//useful in case, T is a static container whose size is encoded in its size.
+
+constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed);//prepares for collation, such that two of the ones processed by this function could be collated by simple using "==" operator.
+
+constexpr bool collate(T<E>\& a, T<E>\& b);//collates between two elements, it could be faster for one of collations because regex groups don't have to be stored, but rather compared one by one, with the ones before getting a higher precedence (basically lexicographically sorting).
 
 
-
-constexpr encode(T<E>\& list\_to\_be\_encoded);//only encodes and it does so if there are any processed regexes stored.
 
 
 
@@ -302,11 +304,11 @@ constexpr encode(T<E>\& list\_to\_be\_encoded);//only encodes and it does so if 
 
 
 
-The every element of T<T<E>> must be a T<E> with sorted elements.
+The every element of T<T<E>> must be a T<E> with sorted elements. The end of T<E> is going to be signaled by an out of order element showing up.
 
 ### 
 
-### Application (2.2)
+### Usage (2.2)
 
 The first thing that you notice is that the collation table must be processed first, then regex will do the encoding of characters to differentiate them from the same ones that are found in some other context. lets take example:
 
@@ -328,7 +330,13 @@ note that I used multiple lines to simplify expression.
 
 Each group captured, will be encoded into a lower level, hence the desired hirearchy in ***1.1*** comes into existence. Once such encoding happens internally, the table original collation table stored is expanded to account for the new ones:
 
-{{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, {encoded versions of the values in first list, but with lower sort key precedence}, {encoded versions of the values in first list, but with lower sort key precedence}}
+
+
+{{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, {encoded versions of the values in first list, but with lower sort key precedence}, {encoded versions of the values in first list, but with lower sort key precedence}} 
+
+
+
+Such a internal table is of course conceptual and it can be optimized away, by simply giving the collation of upper group matches a precedence over the lower ones. 
 
 
 
@@ -342,7 +350,113 @@ Each group captured, will be encoded into a lower level, hence the desired hirea
 
 ### Implementing the core mechanism (3.1)
 
-The main notion of collation is to identify characters based on characters, hence we must implement that before implementing the regex encoding mechanism. For this reason, in this section, we assume that the regex expression passed by the user is empty.
+The main notion of collation is to identify characters based on characters, hence we must implement that before implementing the regex encoding mechanism. For this reason, in this section, we assume that the regex expression passed by the user is empty. To keep it short, we will also avoid including the requires statement.
+
+Also note that the example below is slow since it relies on std::regex rather than better alternatives.
+
+template<typename T, std::integral E>
+
+struct collation\_table{
+
+
+
+T<T<E>> internal\_table;
+
+T<T<std::array<E,3>>> internal\_sort\_keys;
+
+std::regex internal\_regex; 
+
+
+
+constexpr collation\_table\& encode\_regex\_into\_table(std::string\& regex\_a){
+
+internal\_regex= a;
+
+return \*this;
+
+
+
+}
+
+constexpr collation\_table\& encode\_regex\_into\_table(std::string\&\& a){
+
+internal\_regex= std::move(a);
+
+return \*this;
+
+}
+
+
+
+constexpr collation\_table\& change\_collation\_table(T<T<E>>\& a){
+
+internal\_table=a;
+
+return \*this;
+
+}
+
+
+
+constexpr collation\_table\& change\_collation\_table(T<T<E>>\&\& a){
+
+internal\_table=std::move(a);
+
+return \*this;
+
+}
+
+
+
+
+
+constexpr collation\_table(T<T<E>>\& a):internal\_table{a}{
+
+
+
+}
+
+constexpr collation\_table(T<T<E>>\&\& a):internal\_table{std::move(a)}{
+
+
+
+}
+
+
+
+constexpr collation\_table\& operator=(collation\_table\&)=default;
+
+constexpr collation\_table\& operator=(collation\_table\&\&)=default;
+
+
+
+
+
+constexpr U<E> prepare\_for\_collation(T<E>\& list\_to\_be\_processed){
+
+//assuming the internal regex expression is not there, therefor skipping it:
+
+for(auto x: list\_to\_be\_collated){
+
+auto iter= std::ranges::find(list\_to\_be\_collated, x);
+
+if(iter!=std::end()){
+
+
+
+}
+
+}
+
+}
+
+constexpr bool collate(T<E>\& a, T<E>\& b);
+
+
+
+
+
+}
 
 
 
