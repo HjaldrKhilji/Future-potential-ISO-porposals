@@ -166,7 +166,7 @@ There is a issue though, that our example in 1.1 is actually based on context(of
 
 
 
-in our case, since each character would fit into 1 byte, even with additional context based mapping, since ipv4 representations normally are in the base 10 form of 4 bytes, Where as ipv6 is in base 16, we would use 1 bytes per level, furthermore, the rest of the characters (":", "/", "."), are all assigned the value 0, which further makes it easier to fit them. Since its better to store a processed regex expression once and use it again and again, then to using a function to process a regex expression every time, we would do the former, hence there would be one function instead that will only allow us to rely on a structure called 
+in our case, since each character would fit into 1 byte, even with additional context based mapping, since ipv4 representations normally are in the base 10 form of 4 bytes, Where as ipv6 is in base 16, we would use 1 bytes per level, furthermore, the rest of the characters (":", "/", "."), are all assigned the value 0, which further makes it easier to fit them. Since its better to store a processed regex expression once and use it again and again, then to using a function to process a regex expression every time, we would do the former, hence there would be one function instead that will only allow us to rely on a structure called
 
 
 
@@ -312,7 +312,11 @@ std::vector<std::vector<char>>, and the content are so follows:
 
 {1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, all of them are gonna be given internal sort keys, while the characters not mentioned will have the sort key 0, that is that they wont be considered at all when encountered in a string. Say our regex is as follows:
 
-(?: (?: ( ?:\[\[digit]\[abcdef]]:){0, 4}  ){} )
+note that I used multiple lines to simplify expression.
 
+( (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} ) {0,8}  )
 
+| ( (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} ) {0,6} :: (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} )  )
+
+| (?: (?: \[\[digit]] . ){0, 3} ) {4}
 
