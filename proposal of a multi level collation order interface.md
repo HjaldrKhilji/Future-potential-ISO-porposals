@@ -6,7 +6,7 @@
 
 
 
-This informal and incomplete document tries to justify and convince the need for a multi-level-collation algorithm interface in C++, by outlining the motivations, and providing an reference implementation, to show the areas of implementation-defined optimization if such an interface is standardized.
+This informal and incomplete document tries to justify and convince the need for a multi-level-collation algorithm interface in C++, by outlining the motivations, and providing an reference implementation, to show the areas of implementation-defined optimization if such an interface is standardized. It also expanded the notion of collation to include context.
 
 
 
@@ -290,7 +290,11 @@ constexpr operator=(collation\_table<T,E>\&\&);
 
 //our main collation algorithm
 
-constexpr collate(T<E>\& list\_to\_be\_collated);
+constexpr collate(T<E>\& list\_to\_be\_collated);//encodes if there are any processed regex stored
+
+
+
+constexpr encode(T<E>\& list\_to\_be\_encoded);//only encodes and it does so if there are any processed regexes stored.
 
 
 
@@ -302,21 +306,45 @@ The every element of T<T<E>> must be a T<E> with sorted elements.
 
 ### 
 
-### Hints to make it work yourself (2.2)
+### Application (2.2)
 
 The first thing that you notice is that the collation table must be processed first, then regex will do the encoding of characters to differentiate them from the same ones that are found in some other context. lets take example:
 
 say T<T<E>> used to construct the collation table is:
 
-std::vector<std::vector<char>>, and the content are so follows:
+std::vector<std::vector<char>>, and the content are so follows (to complement our example in ***1.1***:
 
-{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, all of them are gonna be given internal sort keys, while the characters not mentioned will have the sort key 0, that is that they wont be considered at all when encountered in a string. Say our regex is as follows:
+{{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}}, all of them are gonna be given internal sort keys, while the characters not mentioned will have the sort key 0, that is that they wont be considered at all when encountered in a string. Say our regex is as follows:
 
 note that I used multiple lines to simplify expression.
 
-( (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} ) {0,8}  )
+( \[(?: (?: \[\[digit]] | \[abcdef] : ){0, 4} ) {0,8}  
 
-| ( (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} ) {0,6} :: (?: (?: \[\[\[digit]]\[abcdef]] : ){0, 4} )  )
+&#x20; (?: (?: \[\[digit]] | \[abcdef] : ){0, 4} ) {0,6} :: (?: \[\[digit]] | \[abcdef] ){0, 4} (?:) ] )
 
-| (?: (?: \[\[digit]] . ){0, 3} ) {4}
+( \[ (?: (?: \[\[digit]] . ){0, 3} ) {4}  (?:) ] )
+
+(\[/\[\[digits]]{1,2}])
+
+Each group captured, will be encoded into a lower level, hence the desired hirearchy in ***1.1*** comes into existence. Once such encoding happens internally, the table original collation table stored is expanded to account for the new ones:
+
+{{1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}, {encoded versions of the values in first list, but with lower sort key precedence}, {encoded versions of the values in first list, but with lower sort key precedence}}
+
+
+
+
+
+
+
+
+
+## Reference Implementation (3)
+
+### Implementing the core mechanism (3.1)
+
+The main notion of collation is to identify characters based on characters, hence we must implement that before implementing the regex encoding mechanism. For this reason, in this section, we assume that the regex expression passed by the user is empty.
+
+
+
+
 
