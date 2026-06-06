@@ -362,9 +362,9 @@ struct collation\_table {
 
 
 
-&#x09;T<T<E>> internal\_table;
+&#x09;T<T<E>> internal\_table;//it isn't flat for book keeping reasons and signify a Hirearchy 
 
-&#x09;T<T<Inner<E>>> internal\_sort\_keys; // the representation could of course be optimized by strictly using non dynamic storage but that would reduce the flexibility of changing the collation table later. I believe a provision for statement metaprogramming could help these issues.
+&#x09;T<Inner<E>> internal\_sort\_keys; // the representation could of course be optimized by strictly using non dynamic storage but that would reduce the flexibility of changing the collation table later. I believe a provision for statement metaprogramming could help these issues.
 
 &#x09;std::regex internal\_regex;
 
@@ -452,8 +452,7 @@ struct collation\_table {
 
 &#x09;	}
 
-&#x09;	for(auto x: list\_to\_be\_collated) {
-
+&#x09;	for(auto x: list\_to\_be\_collated) {//Todo: add another loop to loop over x or a intermediary to x, on which x loops over.
 
 
 &#x09;		auto iter= std::ranges::find(internal\_table, x);
