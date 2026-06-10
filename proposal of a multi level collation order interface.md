@@ -590,7 +590,7 @@ T < Inner < E >> Set\_up\_row\_in\_a\_sort\_key\_table(T < E > character\_table\
 
 &#x09;for(auto current\_outer\_dimension= character\_table.begin(); current\_outer\_dimension<character\_table.end(); current\_outer\_dimension++){
 
-&#x09;	
+&#x09;
 
 &#x09;}
 
@@ -654,7 +654,7 @@ T < T < Inner < E >>> Set\_up\_sort\_keys(T < T < E >> character\_table){
 
 &#x09;	}
 
-&#x09;	
+&#x09;
 
 
 
@@ -754,7 +754,7 @@ struct collation\_table {
 
 &#x20;       T < T < E >> internal\_table;
 
-&#x20;       T < T < Inner < E >>> internal\_sort\_keys; 
+&#x20;       T < T < Inner < E >>> internal\_sort\_keys;
 
 &#x20;       std::regex internal\_regex;
 
@@ -943,10 +943,4 @@ constexpr std::weak\_ordering collate(T < E > \& a, T < E > \& b){
 &#x09;
 
 };
-
-
-
-
-
-
 
