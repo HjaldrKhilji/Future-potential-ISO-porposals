@@ -358,7 +358,7 @@ This section provides a reference implementation for implementing the collation\
 
 The main notion of collation is to identify characters based on characters, hence we must implement that before implementing the regex encoding mechanism. For this reason, in this section, we assume that the regex expression passed by the user is empty. To keep it short, we will also avoid including the requires statement.
 
-Also note that the example below is slow since it relies on std::regex rather than better alternatives.
+Also note that the example below is slow since it relies on std::regex rather than better alternatives. Also Note that the constructors and assignment operators are mere placeholders here.
 
 
 
@@ -514,17 +514,17 @@ struct collation\_table {
 
 &#x20;       for (auto x : list\_to\_be\_processed) {
 
-&#x20;           size\_t size\_req\_for\_element= 0
+&#x20;           size\_t size\_req\_for\_element = 0;
 
 &#x20;               for (auto row : internal\_table) {
 
 &#x20;                   auto iter = std::ranges::find(row, x);
 
-&#x09;				size\_req\_for\_element += ((iter != std::end(row)) ? 1 : 0);
+&#x20;                   size\_req\_for\_element += ((iter != std::end(row)) ? 1 : 0);
 
 &#x20;               }
 
-&#x20;               if()
+&#x20;           if (size\_req\_for\_element != 0) {
 
 &#x20;               //if this condition isnt true then nothing happens since characters not registered in the collation table are ignored.
 
@@ -595,6 +595,8 @@ struct collation\_table {
 
 
 &#x20;           }
+
+&#x20;       }
 
 
 
@@ -870,113 +872,153 @@ struct collation\_table {
 
 
 
-&#x20;       template < typename U = T >
+&#x20;   template < typename U = T >
 
-&#x20;               constexpr U < E > prepare\_for\_collation(T < E > \& list\_to\_be\_processed) {
+&#x20;   constexpr U < E > prepare\_for\_collation(T < E >\& list\_to\_be\_processed) {
 
-&#x20;                       std::size\_t size\_of\_result = 0;
+&#x20;       //assuming the internal regex expression is not there, therefor skipping it:
 
-&#x20;                       U < E > result;
+&#x20;       std::size\_t size\_of\_result = 0;
 
-&#x20;                       if constexpr(std::is\_user\_declared < ^ ^  U < E >::reserve > || std::is\_user\_declared < ^ ^  U < E >::push\_back > || std::is\_user\_declared < ^ ^  U < E >::push\_front >) {
+&#x20;       U < E > result;
 
-&#x20;                               for (auto x: list\_to\_be\_processed) {
+&#x20;       if constexpr (std::is\_user\_declared < ^ ^U < E >::reserve > || std::is\_user\_declared < ^ ^U < E >::push\_back > || std::is\_user\_declared < ^ ^U < E >::push\_front >) {
 
-&#x20;                                       size\_of\_result += (std::ranges::find(internal\_table, x) != std::end(internal\_table)) ? 1 : 0;
+&#x20;           std::size\_t largest\_size\_of\_result\_for\_any\_char = 0;
 
-&#x20;                               }
+&#x20;           for (auto x : list\_to\_be\_processed) {
 
-&#x20;                               if (std::is\_user\_declared < ^ ^  U < E >::reserve > ) {
+&#x20;               std::size\_t size\_of\_result\_for\_this\_char = 0;
 
-&#x20;                                       result.reserve(size\_of\_result\*internal\_table.size()); //just to show case the possible room of optimizations
+&#x20;               for (auto iter\_level: internal\_table) {
 
-&#x20;                               }
+&#x20;                       size\_of\_result\_for\_this\_char += ((std::ranges::find(iter\_level, x) != std::end(internal\_table)) ? 1 : 0);
 
-&#x20;                       }
+&#x20;                       size\_of\_result += size\_of\_result\_for\_this\_char;
 
-&#x20;                       for (auto y: list\_to\_be\_collated) {
+&#x20;                       //basically, at each level, if a character is found to be supposed to have a part of key, he will have a key for himself
 
-&#x20;                               for (auto x: y) {
+&#x20;                       //lower priority characters/code points/or whatever, will have size added for it in the later part of the "iter\_level" loop.
 
-&#x20;                                       auto iter = std::ranges::find(internal\_table, x);
+&#x20;                       //In hindsight, one might assume that the concept of allocating the right bytes and tracking the right bytes may have been the toughest part.
 
-&#x20;                                       if (iter != std::end()) {
+&#x20;                   }
 
-&#x20;                                               if constexpr(std::is\_user\_declared < ^ ^  U < E >::push\_back > || std::is\_user\_declared < ^ ^  U < E >::push\_front > ) {
+&#x20;               if (size\_of\_result\_for\_this\_char > largest\_size\_of\_result\_for\_any\_char) {
 
-&#x20;                                                       //I think dynamic non contagious containers should not be supported (bad idea to support them), as shown below:
-
-&#x20;                                                       std::vector < E > temp(internal\_table.size() \* size\_of\_result);
-
-&#x20;                                                       for (E individual: \* std::next(std::begin(internal\_sort\_keys), iter - std::begin(list\_to\_be\_collated))) {
-
-&#x20;                                                               temp.push(individual);
-
-&#x20;                                                       }
-
-&#x20;                                                       if constexpr(std::is\_user\_declared < ^ ^  U < E >::push\_back > ) {
-
-&#x20;                                                               for (std::size\_t i = 0; i < internal\_table.size(); i++) {
-
-&#x20;                                                                       for (std::size\_t j = i; j < size\_of\_result; j += 4) {
-
-&#x20;                                                                               result.push\_back(temp\[j]);
-
-&#x20;                                                                       }
-
-&#x20;                                                               }
-
-&#x20;                                                       } else {
-
-&#x20;
-
-&#x20;                                                                       for (std::size\_t i = internal\_table.size(); i < 0; i--) {
-
-&#x20;                                                                               for (std::size\_t j = size\_of\_result; j < i; j -= 4) {
-
-&#x20;                                                                                       result.push\_front(temp\[j]);
-
-&#x20;                                                                               }
-
-&#x20;                                                                       }
-
-&#x20;
-
-
-
-&#x20;                                                       }
-
-
-
-&#x20;                                               }
-
-&#x20;                                       } else {
-
-&#x09;					auto\& source= \* std::next(std::begin(internal\_sort\_keys), iter - std::begin(list\_to\_be\_collated));
-
-&#x20;                                               for (E individual=source.begin(), auto iter=result.begin(); individual<source.end(); individual++, iter++) {
-
-&#x20;                                                       \*iter= \*individual;
-
-&#x09;						iter++;
-
-&#x20;                                               }
-
-
-
-&#x20;                                       }
-
-
-
-&#x20;                               }
-
-
-
-&#x20;                       }
+&#x20;                   largest\_size\_of\_result\_for\_any\_char = size\_of\_result\_for\_this\_char;
 
 &#x20;               }
 
-&#x20;       return result;
+&#x20;           }
+
+&#x20;           size\_of\_result += largest\_size\_of\_result\_for\_any\_char; // this is to allow for "level delimters". Basically, every level has a delimeter that can be specified as E{}, where if E{} is char, the value of 00, if wchar\_t, then more depending on its size, and so on for other types.
+
+&#x20;           if (std::is\_user\_declared < ^ ^U < E >::reserve >) {
+
+&#x20;               result.reserve(size\_of\_result); //just to show case the possible room of optimizations
+
+&#x20;           }
+
+&#x20;       }
+
+&#x20;       for (auto x : list\_to\_be\_processed) {
+
+&#x20;           size\_t size\_req\_for\_element = 0;
+
+&#x20;               for (auto row : internal\_table) {
+
+&#x20;                   auto iter = std::ranges::find(row, x);
+
+&#x20;                   size\_req\_for\_element += ((iter != std::end(row)) ? 1 : 0);
+
+&#x20;               }
+
+&#x20;           if (size\_req\_for\_element != 0) {
+
+&#x20;               //if this condition isnt true then nothing happens since characters not registered in the collation table are ignored.
+
+&#x20;               if constexpr (std::is\_user\_declared < ^ ^U < E >::push\_back > || std::is\_user\_declared < ^ ^U < E >::push\_front >) {
+
+&#x20;                   //I think dynamic non contagious containers should not be supported (bad idea to support them), as shown below:
+
+&#x20;                   std::vector < E > temp(internal\_table.size() \* size\_of\_result);
+
+&#x20;                   for (E individual : \*std::next(std::begin(internal\_sort\_keys), iter - std::begin(list\_to\_be\_collated))) {
+
+&#x20;                       temp.push(individual);
+
+&#x20;                   }
+
+&#x20;                   if constexpr (std::is\_user\_declared < ^ ^U < E >::push\_back >) {
+
+&#x20;                       for (std::size\_t i = 0; i < internal\_table.size(); i++) {
+
+&#x20;                           for (std::size\_t j = i; j < size\_of\_result; j += 4) {
+
+&#x20;                               result.push\_back(temp\[j]);
+
+&#x20;                           }
+
+&#x20;                       }
+
+&#x20;                   }
+
+&#x20;                   else {
+
+
+
+&#x20;                       for (std::size\_t i = internal\_table.size(); i < 0; i--) {
+
+&#x20;                           for (std::size\_t j = size\_of\_result; j < i; j -= 4) {
+
+&#x20;                               result.push\_front(temp\[j]);
+
+&#x20;                           }
+
+&#x20;                       }
+
+
+
+
+
+&#x20;                   }
+
+
+
+&#x20;               }
+
+&#x20;           }
+
+&#x20;           else {
+
+&#x20;               auto\& source = \*std::next(std::begin(internal\_sort\_keys), iter - std::begin(list\_to\_be\_collated));
+
+&#x20;               for (E individual = source.begin(), auto iter = result.begin(); individual < source.end(); individual++, iter++) {
+
+&#x20;                   \*iter = \*individual;
+
+&#x20;                   iter++;
+
+&#x20;               }
+
+
+
+&#x20;           }
+
+&#x20;       }
+
+
+
+&#x20;
+
+
+
+&#x20;
+
+
+
+return result;
 
 }
 
